@@ -27,18 +27,23 @@ namespace BarberAndClientsAsyncTest
         {
             while (_handledClientsCount < _clientsPerDay)
             {
+                bool possibleToCutClient = false;
                 lock (_stateMonitor)
                 {
                     if (_state == BarberState.Sleeping)
                         continue;
+
+                    possibleToCutClient = IfPossibleToCutClient();
+
+                    if (!possibleToCutClient && _state == BarberState.Waiting)
+                    {
+                        _state = BarberState.Sleeping;
+                        Console.WriteLine("Barber went to sleep");
+                    }
                 }
 
-                var successCutting = TryCutClient();
-                lock (_stateMonitor)
-                {
-                    if (!successCutting && _state == BarberState.Waiting)
-                        _state = BarberState.Sleeping;
-                }
+                if (possibleToCutClient)
+                    CutClient();
             }
         }
 
@@ -49,19 +54,22 @@ namespace BarberAndClientsAsyncTest
                 if (_state != BarberState.Sleeping)
                     return false;
 
+                Console.WriteLine("Woke up barber");
                 _state = BarberState.Waiting;
                 return true;
             }
         }
 
-        private bool TryCutClient()
+        private bool IfPossibleToCutClient()
         {
-            Client client;
-            lock (_stateMonitor)
-            {
-                if (_state != BarberState.Waiting || !_queue.TryDequeue(out client))
-                    return false;
-            }
+            if (_state != BarberState.Waiting || _queue.IsEmpty())
+                return false;
+            
+            return true;
+        }
+        private void CutClient()
+        {
+            _queue.TryDequeue(out var client);
 
             lock (_stateMonitor)
             {
@@ -79,8 +87,6 @@ namespace BarberAndClientsAsyncTest
             }
 
             _handledClientsCount++;
-
-            return true;
         }
     }
 }

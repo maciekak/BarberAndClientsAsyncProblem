@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BarberAndClientsAsyncTest
 {
     public class HairdresserManager
     {
-        private int _maxQueueSize = 20;
-        private int _clientsPerDay = 100;
+        private int _maxQueueSize = 5;
+        private int _clientsPerDay = 10;
         private ClientFactory _clientFactory;
         private SyncQueue<Client> _queue;
         private Barber _barber;
-        //TODO: use token instead this
-        private bool _shouldStopWorking = false;
+        private CancellationToken _cancellationToken;
 
         public void Run()
         {
@@ -20,23 +20,29 @@ namespace BarberAndClientsAsyncTest
             _queue = new SyncQueue<Client>(_maxQueueSize);
             _barber = new Barber(_queue, _clientsPerDay);
 
-            var barberTask = Task.Factory.StartNew(_barber.Work);
-            var clientsTask = Task.Factory.StartNew(SimulateQueue);
+            using (var clientsTokenSource = new CancellationTokenSource())
+            {
+                var barberTask = Task.Factory.StartNew(_barber.Work);
+                _cancellationToken = clientsTokenSource.Token;
+                var clientsTask = Task.Factory.StartNew(SimulateQueue, clientsTokenSource.Token);
 
-            barberTask.Wait();
-            _shouldStopWorking = true;
-            clientsTask.Wait();
+                barberTask.Wait();
+                clientsTokenSource.Cancel();
+                clientsTask.Wait();
+            }
+
+            Console.WriteLine("End of the day");
+            Console.ReadKey();
         }
 
         private void SimulateQueue()
         {
-            while (!_shouldStopWorking)
+            while (!_cancellationToken.IsCancellationRequested)
             {
-                var wasQueueEmpty = _queue.IsEmpty();
                 if (_queue.TryEnqueue(_clientFactory.WaitForNextClient()))
                 {
                     Console.WriteLine("Next client waiting in queue");
-                    if (wasQueueEmpty)
+                    if (_queue.IsOnlyOneElement())
                         _barber.WakeUp();
                 }
                 else

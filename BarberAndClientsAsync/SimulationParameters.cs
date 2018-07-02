@@ -7,8 +7,8 @@
         public int MinTimeToNextClient { get; }
         public int MaxTimeToNextClient { get; }
 
-        public SimulationParameters(int minCutTime = 500, int maxCutTime = 3000,
-            int minTimeToNextClient = 100, int maxTimeToNextClient = 5000)
+        public SimulationParameters(int minCutTime = 50, int maxCutTime = 300,
+            int minTimeToNextClient = 10, int maxTimeToNextClient = 500)
         {
             MinCutTime = minCutTime;
             MaxCutTime = maxCutTime;

@@ -41,7 +41,7 @@ namespace BarberAndClientsAsyncTest
                 {
                     item = _queue.Dequeue();
                     _size--;
-                    Console.WriteLine("After dqeueue, clients in queue: {0}", _maxSize - _size);
+                    Console.WriteLine("After dqeueue, clients in queue: {0}", _size);
                     return true;
                 }
 
@@ -54,7 +54,15 @@ namespace BarberAndClientsAsyncTest
         {
             lock (_queueMonitor)
             {
-                return _size > 0;
+                return _size == 0;
+            }
+        }
+
+        public bool IsOnlyOneElement()
+        {
+            lock (_queueMonitor)
+            {
+                return _size == 1;
             }
         }
     }
