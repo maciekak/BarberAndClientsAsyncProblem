@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace BarberAndClientsAsyncTest
 {
     //I know that there is ConcurrateQueue, but i wanted to implemented it by myself
-    class SyncQueue <T>
+    public class SyncQueue <T>
     {
         private readonly int _maxSize;
         private readonly Queue<T> _queue;
@@ -24,6 +25,7 @@ namespace BarberAndClientsAsyncTest
                 {
                     _queue.Enqueue(item);
                     _size++;
+                    Console.WriteLine("After enqueue, clients in queue: {0}", _size);
                     return true;
                 }
 
@@ -39,11 +41,20 @@ namespace BarberAndClientsAsyncTest
                 {
                     item = _queue.Dequeue();
                     _size--;
+                    Console.WriteLine("After dqeueue, clients in queue: {0}", _maxSize - _size);
                     return true;
                 }
 
                 item = default(T);
                 return false;
+            }
+        }
+
+        public bool IsEmpty()
+        {
+            lock (_queueMonitor)
+            {
+                return _size > 0;
             }
         }
     }
